@@ -2,9 +2,8 @@
 
 <script type="text/javascript">
     const STORAGE_KEY = "work_history_data_v4";
-    var workHistory = loadExistingData();
-    setTimeout(timerStart, 999);
-    setTimeout(timerStartForSign, 999);
+    var workHistory = load_existing_data();
+    setTimeout(continue_timer, 999);
 
     var body = $(document.body), table, skeletonTr;
 
@@ -30,7 +29,7 @@
                 var thiz = $(this);
                 thiz.remove();
             });
-            resetHistory();
+            reset_log_history();
             line_number = 1;
             table.find(".add_row").trigger("click");
         });
@@ -40,7 +39,7 @@
             workHistory.list = workHistory.list.filter(function (f) {
                 return f.line_number !== tr.data("line_number");
             });
-            storeHistory();
+            store_log_history();
 
             tr.remove();
 
@@ -48,16 +47,24 @@
         });
         table.find("tbody").on("click", ".start_time", function () {
             var t = $(this), tr = t.closest("tr"), ln = parseInt(tr.data("line_number"));
-            timeButton(ln, "start");
+            time_button_action(ln, "start");
         });
         table.find("tbody").on("click", ".end_time", function () {
             var t = $(this), tr = t.closest("tr"), ln = parseInt(tr.data("line_number"));
-            timeButton(ln, "end");
+            time_button_action(ln, "end");
         });
         table.find("tbody").on("click", ".add_new_row_bottom", function () {
             var tr = $(this).closest("tr");
             var line = workHistory.list.indexOf(workHistory.list.filter(function (t) { return t.line_number === tr.data("line_number"); })[0]);
             add_new_line_at_position(line + 1);
+        });
+        table.find("tbody").on("click", ".move_up", function () {
+            var tr = $(this).closest("tr");
+            do_move_up(tr);
+        });
+        table.find("tbody").on("click", ".move_down", function () {
+            var tr = $(this).closest("tr");
+            do_move_down(tr);
         });
 
         table.find("tbody").on("change", ".hour, .minute, .title, .description", function () {
@@ -94,7 +101,7 @@
             }
             table.find(".hour_final").html(hour);
             table.find(".minute_final").html(minute);
-            storeHistory();
+            store_log_history();
         });
 
         if (workHistory.list.length > 0) {
@@ -112,24 +119,33 @@
                 lastRow.data("line_number", line.line_number);
                 lastRow.addClass("line_number_" + line.line_number);
 
-                timeButton(line.line_number, "check");
+                time_button_action(line.line_number, "check");
             });
             table.find("tbody tr").first().find(".hour").trigger("change");
-            storeHistory();
+            store_log_history();
         }
         else {
             auto_grow(table.find("tbody").find("tr").last().find(".description")[0]);
         }
 
-        handleKeyPressHourData();
-        handlePasteHourData();
+        handle_key_press_hour_data();
+        handle_paste_hour_data();
     });
 
-    function storeHistory() {
+    function store_log_history() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(workHistory));
+        if (workHistory.list.length === 0) {
+
+        }
+        else if (workHistory.list.length === 1) {
+            table.find(".move_up,.move_down").addClass("hidden");
+        }
+        else {
+            table.find(".move_up,.move_down").removeClass("hidden");
+        }
     }
 
-    function resetHistory() {
+    function reset_log_history() {
         workHistory = {list: []};
     }
 
@@ -138,10 +154,10 @@
         element.style.height = (element.scrollHeight) + "px";
     }
 
-    function loadExistingData() {
+    function load_existing_data() {
         var data = localStorage.getItem(STORAGE_KEY);
         if (data === null) {
-            resetHistory();
+            reset_log_history();
             data = JSON.stringify(workHistory);
         }
         data = JSON.parse(data);
@@ -149,7 +165,7 @@
         return data;
     }
 
-    function timeButton(line_number, action) {
+    function time_button_action(line_number, action) {
         var line = workHistory.list.filter(function (t) {
             return t.line_number === line_number;
         })[0];
@@ -158,13 +174,13 @@
             if (line.started_at === undefined) {
                 var today = new Date();
                 line.started_at = today.toISOString().split("T")[0] + " " + today.toTimeString().substring(0, 8);
-                storeHistory();
-                timeButton(line_number, "check");
+                store_log_history();
+                time_button_action(line_number, "check");
             }
         }
         else if (action === "end") {
             if (line.started_at !== undefined) {
-                var diff = calculateInterval(line.started_at);
+                var diff = calculate_time_interval(line.started_at);
                 if (diff[0] > 0) {
                     if (line.hour === "") line.hour = diff[0];
                     else line.hour = parseInt(line.hour) + diff[0];
@@ -175,8 +191,8 @@
                 }
 
                 delete line.started_at;
-                storeHistory();
-                timeButton(line_number, "check");
+                store_log_history();
+                time_button_action(line_number, "check");
 
                 tr.find(".hour").val(line.hour);
                 tr.find(".minute").val(line.minute);
@@ -193,6 +209,7 @@
                 tr.find(".title_container").removeClass("timer_running");
             }
             else {
+                tr.find(".time_info").show();
                 tr.find(".start_time").hide();
                 tr.find(".end_time").show();
                 tr.find(".title_container").addClass("timer_running");
@@ -200,7 +217,7 @@
         }
     }
 
-    function calculateInterval(started_at) {
+    function calculate_time_interval(started_at) {
         var today = new Date();
         var from = new Date(started_at);
         var target = new Date(today.toISOString().split("T")[0] + " " + today.toTimeString().substring(0, 8));
@@ -218,41 +235,21 @@
         return [diffHrs, diffMins];
     }
 
-    function timerStart() {
+    function continue_timer() {
         workHistory.list.forEach(function (line) {
             if (line.started_at !== undefined) {
                 var tr = $(document.body).find("tr.line_number_" + line.line_number);
-                var diff = calculateInterval(line.started_at);
+                var diff = calculate_time_interval(line.started_at);
                 tr.find(".time_info").show();
                 tr.find(".running_hours").html(diff[0]);
                 tr.find(".running_minutes").html(diff[1]);
             }
         });
-        setTimeout(timerStart, 9999);
-    }
-    var lastSign = 0;
-    function timerStartForSign() {
-        /*if (lastSign === 0) {
-            lastSign = 1;
-            table.find(".time_info_pm").html("");
-        }
-        else if (lastSign === 1) {
-            lastSign = 0;
-            table.find(".time_info_pm").html("+");
-        }
-        else if (lastSign === 2) {
-            lastSign = 3;
-            table.find(".time_info_pm").html("...");
-        }
-        else {
-            lastSign = 0;
-            table.find(".time_info_pm").html("");
-        }
-        setTimeout(timerStartForSign, 999);*/
+        setTimeout(continue_timer, 9999);
     }
 
     var pattern = new RegExp("(^([0-9]{0,12}?)$)");
-    function handleKeyPressHourData() {
+    function handle_key_press_hour_data() {
         $(document.body).on("keypress", "input[type='text'].number", function (e) {
             if (e.which == 0 || e.which == 8) return true;
             var v = getTextFieldValue(this, String.fromCharCode(e.which));
@@ -260,7 +257,7 @@
         });
     }
 
-    function handlePasteHourData() {
+    function handle_paste_hour_data() {
         document.addEventListener("paste", function (e) {
             var v, f = $(e.target), ov = f.val();
             if (!f.hasClass("number")) return;
@@ -288,20 +285,66 @@
     }
 
     function add_new_line_at_position(position) {
-        var wh = workHistory.list[position - 1];
-        var tr = table.find(".line_number_" + wh.line_number);
-        tr.after(skeletonTr.clone(true));
+        if (workHistory.list.length === 0) {
+            workHistory.list.push(get_empty_row(line_number++));
+            store_log_history();
 
-        workHistory.list.splice(position, 0, get_empty_row(line_number++));
-        storeHistory();
+            table.find("tbody").append(skeletonTr.clone(true));
 
-        tr = tr.next();
-        tr.data("line_number", line_number - 1);
-        tr.addClass("line_number_" + (line_number - 1));
+            var tr = table.find("tbody tr").first();
+            tr.data("line_number", line_number - 1);
+            tr.addClass("line_number_" + (line_number - 1));
 
-        auto_grow(tr.find(".description")[0]);
-        timeButton(parseInt(tr.data("line_number")), "check");
-        tr.find(".hour").trigger("change");
+            auto_grow(tr.find(".description")[0]);
+            time_button_action(parseInt(tr.data("line_number")), "check");
+            tr.find(".hour").trigger("change");
+        }
+        else {
+            var wh = workHistory.list[position - 1];
+            var tr = table.find(".line_number_" + wh.line_number);
+            tr.after(skeletonTr.clone(true));
+
+            workHistory.list.splice(position, 0, get_empty_row(line_number++));
+            store_log_history();
+
+            tr = tr.next();
+            tr.data("line_number", line_number - 1);
+            tr.addClass("line_number_" + (line_number - 1));
+
+            auto_grow(tr.find(".description")[0]);
+            time_button_action(parseInt(tr.data("line_number")), "check");
+            tr.find(".hour").trigger("change");
+        }
+    }
+
+    function do_move_up(tr) {
+        var position = workHistory.list.indexOf(workHistory.list.filter(function (t) { return t.line_number === tr.data("line_number"); })[0]);
+        var next_position = workHistory.list[position - 1];
+        workHistory.list[position - 1] = workHistory.list[position];
+        workHistory.list[position] = next_position;
+        tr.prev().before(tr.clone(true));
+        tr.remove();
+        table.find("tbody tr").first().find(".hour").trigger("change");
+
+        table.find(".hover_actions").addClass("hidden");
+        setTimeout(function () {
+            table.find(".hover_actions").removeClass("hidden");
+        }, 999);
+    }
+
+    function do_move_down(tr) {
+        var position = workHistory.list.indexOf(workHistory.list.filter(function (t) { return t.line_number === tr.data("line_number"); })[0]);
+        var next_position = workHistory.list[position + 1];
+        workHistory.list[position + 1] = workHistory.list[position];
+        workHistory.list[position] = next_position;
+        tr.next().after(tr.clone(true));
+        tr.remove();
+        table.find("tbody tr").first().find(".hour").trigger("change");
+
+        table.find(".hover_actions").addClass("hidden");
+        setTimeout(function () {
+            table.find(".hover_actions").removeClass("hidden");
+        }, 999);
     }
 
     function get_empty_row(line_number0) {
@@ -336,9 +379,9 @@
                     <div style="height:30px;"></div>
                 </div>
                 <div class="hover_actions">
-                    <span class="move_up" title="Add new Line">move up</span>
+                    <span class="move_up" title="Move Up">move up</span>
                     <span class="add_new_row_bottom" title="Add new Line">+</span>
-                    <span class="move_down" title="Add new Line">move down</span>
+                    <span class="move_down" title="Move Down">move down</span>
                 </div>
             </td>
             <td>
@@ -379,6 +422,10 @@
 </div>
 
 <style type="text/css">
+    .hidden {
+        display: none !important;
+    }
+
     table {
         width: 99%;
         border-spacing: 0px;
@@ -450,6 +497,7 @@
         margin-left: calc(50% - 100px);
         margin-top: -40px;
         width: 220px;
+        text-align: center;
     }
     div.title_container:hover + .hover_actions, .hover_actions:hover {
         opacity: 1;
@@ -465,6 +513,10 @@
         padding: 3px 8px 1px 8px;
         border-radius: 6px;
         cursor: pointer;
+    }
+
+    tbody tr:last-child .move_down, tbody tr:first-child .move_up {
+        display: none !important;
     }
 
     div.title_container.timer_running {
