@@ -1,0 +1,542 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+
+<script type="text/javascript">
+    const STORAGE_KEY = "work_history_data_v4";
+    var workHistory = loadExistingData();
+    setTimeout(timerStart, 999);
+    setTimeout(timerStartForSign, 999);
+
+    var body = $(document.body), table, skeletonTr;
+
+    $(document).ready(function () {
+        body = $(document.body);
+
+        table = body.find("table.main");
+
+        skeletonTr = table.find("tbody tr").first().clone(true), line_number = 1;
+
+        skeletonTr.find(".title").val("");
+        skeletonTr.find(".description").val("");
+        skeletonTr.find(".hour").val("");
+        skeletonTr.find(".minute").val("");
+
+        table.find(".add_row").on("click", function () {
+            var tr = table.find("tbody tr").last();
+            var line = workHistory.list.indexOf(workHistory.list.filter(function (t) { return t.line_number === tr.data("line_number"); })[0]);
+            add_new_line_at_position(line + 1);
+        });
+        table.find(".clear_rows").on("click", function () {
+            table.find("tbody").find("tr").each(function () {
+                var thiz = $(this);
+                thiz.remove();
+            });
+            resetHistory();
+            line_number = 1;
+            table.find(".add_row").trigger("click");
+        });
+        table.find("tbody").on("click", ".remove_row", function () {
+            var tr = $(this).closest("tr");
+
+            workHistory.list = workHistory.list.filter(function (f) {
+                return f.line_number !== tr.data("line_number");
+            });
+            storeHistory();
+
+            tr.remove();
+
+            table.find("tbody tr").first().find(".hour").trigger("change");
+        });
+        table.find("tbody").on("click", ".start_time", function () {
+            var t = $(this), tr = t.closest("tr"), ln = parseInt(tr.data("line_number"));
+            timeButton(ln, "start");
+        });
+        table.find("tbody").on("click", ".end_time", function () {
+            var t = $(this), tr = t.closest("tr"), ln = parseInt(tr.data("line_number"));
+            timeButton(ln, "end");
+        });
+        table.find("tbody").on("click", ".add_new_row_bottom", function () {
+            var tr = $(this).closest("tr");
+            var line = workHistory.list.indexOf(workHistory.list.filter(function (t) { return t.line_number === tr.data("line_number"); })[0]);
+            add_new_line_at_position(line + 1);
+        });
+
+        table.find("tbody").on("change", ".hour, .minute, .title, .description", function () {
+            var hour = 0, minute = 0, rows = [];
+            table.find("tbody").find("tr").each(function () {
+                var thiz = $(this);
+                var hour2 = $.trim(thiz.find(".hour").val());
+                var minute2 = $.trim(thiz.find(".minute").val());
+                if (hour2.length > 0) hour += parseInt(hour2);
+                if (minute2.length > 0) minute += parseInt(minute2);
+
+                var line = {};
+                if (thiz.data("line_number") === undefined) {
+                    line.line_number = line_number++;
+                    thiz.data("line_number", line.line_number);
+                    thiz.addClass("line_number_" + line.line_number);
+                    workHistory.list.push(line);
+                }
+                else {
+                    line = workHistory.list.filter(function (f) {
+                        return f.line_number === thiz.data("line_number");
+                    })[0];
+                }
+
+                line.line_number = thiz.data("line_number");
+                line.title = thiz.find(".title").val();
+                line.description = thiz.find(".description").val();
+                line.hour = thiz.find(".hour").val();
+                line.minute = thiz.find(".minute").val();
+            });
+            while (minute >= 60) {
+                hour++;
+                minute = minute - 60;
+            }
+            table.find(".hour_final").html(hour);
+            table.find(".minute_final").html(minute);
+            storeHistory();
+        });
+
+        if (workHistory.list.length > 0) {
+            table.find("tbody tr").first().remove();
+            workHistory.list.forEach(function (line) {
+                if (line.line_number === undefined) line.line_number = line_number++;
+                table.find("tbody").append(skeletonTr.clone(true));
+                var lastRow = table.find("tbody").find("tr").last();
+                lastRow.find(".title").val(line.title);
+                lastRow.find(".description").val(line.description);
+                lastRow.find(".hour").val(line.hour);
+                lastRow.find(".minute").val(line.minute);
+                auto_grow(lastRow.find(".description")[0]);
+                if (line.line_number >= line_number) line_number = line.line_number + 1;
+                lastRow.data("line_number", line.line_number);
+                lastRow.addClass("line_number_" + line.line_number);
+
+                timeButton(line.line_number, "check");
+            });
+            table.find("tbody tr").first().find(".hour").trigger("change");
+            storeHistory();
+        }
+        else {
+            auto_grow(table.find("tbody").find("tr").last().find(".description")[0]);
+        }
+
+        handleKeyPressHourData();
+        handlePasteHourData();
+    });
+
+    function storeHistory() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workHistory));
+    }
+
+    function resetHistory() {
+        workHistory = {list: []};
+    }
+
+    function auto_grow(element) {
+        element.style.height = "5px";
+        element.style.height = (element.scrollHeight) + "px";
+    }
+
+    function loadExistingData() {
+        var data = localStorage.getItem(STORAGE_KEY);
+        if (data === null) {
+            resetHistory();
+            data = JSON.stringify(workHistory);
+        }
+        data = JSON.parse(data);
+
+        return data;
+    }
+
+    function timeButton(line_number, action) {
+        var line = workHistory.list.filter(function (t) {
+            return t.line_number === line_number;
+        })[0];
+        var tr = $(document.body).find("tr.line_number_" + line_number);
+        if (action === "start") {
+            if (line.started_at === undefined) {
+                var today = new Date();
+                line.started_at = today.toISOString().split("T")[0] + " " + today.toTimeString().substring(0, 8);
+                storeHistory();
+                timeButton(line_number, "check");
+            }
+        }
+        else if (action === "end") {
+            if (line.started_at !== undefined) {
+                var diff = calculateInterval(line.started_at);
+                if (diff[0] > 0) {
+                    if (line.hour === "") line.hour = diff[0];
+                    else line.hour = parseInt(line.hour) + diff[0];
+                }
+                if (diff[1] > 0) {
+                    if (line.minute === "") line.minute = diff[1];
+                    else line.minute = parseInt(line.minute) + diff[1];
+                }
+
+                delete line.started_at;
+                storeHistory();
+                timeButton(line_number, "check");
+
+                tr.find(".hour").val(line.hour);
+                tr.find(".minute").val(line.minute);
+
+                alert(diff[0] + " hours, " + diff[1] + " minutes added");
+                body.find("tbody tr").first().find(".hour").trigger("change");
+            }
+        }
+        else if (action === "check") {
+            tr.find(".time_info").hide();
+            if (line.started_at === undefined) {
+                tr.find(".start_time").show();
+                tr.find(".end_time").hide();
+                tr.find(".title_container").removeClass("timer_running");
+            }
+            else {
+                tr.find(".start_time").hide();
+                tr.find(".end_time").show();
+                tr.find(".title_container").addClass("timer_running");
+            }
+        }
+    }
+
+    function calculateInterval(started_at) {
+        var today = new Date();
+        var from = new Date(started_at);
+        var target = new Date(today.toISOString().split("T")[0] + " " + today.toTimeString().substring(0, 8));
+
+        var diffMs = (target - from);
+        var diffDays = Math.floor(diffMs / 86400000); // days
+        var diffHrs = Math.floor((diffMs % 86400000) / 3600000) + (diffDays * 24); // hours
+        var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
+
+        while (diffMins >= 60) {
+            diffHrs++;
+            diffMins = diffMins - 60;
+        }
+
+        return [diffHrs, diffMins];
+    }
+
+    function timerStart() {
+        workHistory.list.forEach(function (line) {
+            if (line.started_at !== undefined) {
+                var tr = $(document.body).find("tr.line_number_" + line.line_number);
+                var diff = calculateInterval(line.started_at);
+                tr.find(".time_info").show();
+                tr.find(".running_hours").html(diff[0]);
+                tr.find(".running_minutes").html(diff[1]);
+            }
+        });
+        setTimeout(timerStart, 9999);
+    }
+    var lastSign = 0;
+    function timerStartForSign() {
+        /*if (lastSign === 0) {
+            lastSign = 1;
+            table.find(".time_info_pm").html("");
+        }
+        else if (lastSign === 1) {
+            lastSign = 0;
+            table.find(".time_info_pm").html("+");
+        }
+        else if (lastSign === 2) {
+            lastSign = 3;
+            table.find(".time_info_pm").html("...");
+        }
+        else {
+            lastSign = 0;
+            table.find(".time_info_pm").html("");
+        }
+        setTimeout(timerStartForSign, 999);*/
+    }
+
+    var pattern = new RegExp("(^([0-9]{0,12}?)$)");
+    function handleKeyPressHourData() {
+        $(document.body).on("keypress", "input[type='text'].number", function (e) {
+            if (e.which == 0 || e.which == 8) return true;
+            var v = getTextFieldValue(this, String.fromCharCode(e.which));
+            return pattern.test(v);
+        });
+    }
+
+    function handlePasteHourData() {
+        document.addEventListener("paste", function (e) {
+            var v, f = $(e.target), ov = f.val();
+            if (!f.hasClass("number")) return;
+            if (window.clipboardData && window.clipboardData.getData) { // IE
+                v = window.clipboardData.getData('Text');
+            }
+            else if (e.originalEvent && e.originalEvent.clipboardData && e.originalEvent.clipboardData.getData) {
+                v = e.originalEvent.clipboardData.getData('text/plain');
+            }
+            else if (e.clipboardData && e.clipboardData.getData) {
+                v = e.clipboardData.getData('text/plain');
+            }
+            v = getTextFieldValue(f[0], v);
+            if (!pattern.test(v)) e.preventDefault();
+        });
+    }
+
+    function getTextFieldValue(input, nv) {
+        var v = input.value, i = input.selectionStart, j = input.selectionEnd;
+
+        if (i == 0 && j == v.length) return nv;
+        else if (i != j || i > 0) return v.substr(0, i) + nv + v.substr(j);
+        else if (i == 0) return nv + v;
+        else return v + nv;
+    }
+
+    function add_new_line_at_position(position) {
+        var wh = workHistory.list[position - 1];
+        var tr = table.find(".line_number_" + wh.line_number);
+        tr.after(skeletonTr.clone(true));
+
+        workHistory.list.splice(position, 0, get_empty_row(line_number++));
+        storeHistory();
+
+        tr = tr.next();
+        tr.data("line_number", line_number - 1);
+        tr.addClass("line_number_" + (line_number - 1));
+
+        auto_grow(tr.find(".description")[0]);
+        timeButton(parseInt(tr.data("line_number")), "check");
+        tr.find(".hour").trigger("change");
+    }
+
+    function get_empty_row(line_number0) {
+        return {
+            line_number: line_number0 === undefined ? line_number++ : line_number0,
+            title: "",
+            description: "",
+            hour: "",
+            minute: ""
+        };
+    }
+</script>
+
+<div id="main_div">
+    <title>Worklog</title>
+    <table class="main">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th class="action_th">Time</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr>
+            <td>
+                <div class="title_container">
+                    <b style="display:inline-block;width:100%;">Title:</b>
+                    <input type="text" class="title" placeholder="Title"/>
+                    Description:
+                    <textarea class="description" oninput="auto_grow(this)"></textarea>
+                    <div style="height:30px;"></div>
+                </div>
+                <div class="hover_actions">
+                    <span class="move_up" title="Add new Line">move up</span>
+                    <span class="add_new_row_bottom" title="Add new Line">+</span>
+                    <span class="move_down" title="Add new Line">move down</span>
+                </div>
+            </td>
+            <td>
+                <div class="time_container">
+                    <b style="display:inline-block;width:100%;">Time:</b>
+                    <input type="text" class="hour number" placeholder="Hour" maxlength="2"/>
+                    <input type="text" class="minute number" placeholder="Minute" maxlength="2"/>
+                    <button class="start_time">Start</button>
+                    <button class="end_time">Stop</button>
+                    <div class="time_info"><span class="running_hours"></span> hours, <span class="running_minutes"></span> minutes<span class="time_info_pm"></span></div>
+                    <span class="remove_row" title="Remove this Line">X</span>
+                    <span class="hour_sign"><span>H</span></span>
+                    <span class="minute_sign"><span>M</span></span>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+
+        <tfoot>
+        <tr>
+            <td></td>
+            <td style="text-align:right;padding:7px;"><span class="hour_final">0</span> Hour <span class="minute_final">0</span>
+                Minute
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td style="text-align:right;padding:7px;">
+                <button style="width:100%;padding:5px;" class="add_row">+ Row</button>
+                <div style="height:7px;"></div>
+                <button style="width:100%;padding:5px;" class="clear_rows">Clear Rows</button>
+            </td>
+        </tr>
+        </tfoot>
+
+    </table>
+
+</div>
+
+<style type="text/css">
+    table {
+        width: 99%;
+        border-spacing: 0px;
+        text-indent: inherit;
+        line-height: 1;
+        font-family: "Courier New" !important;
+        font: 15px "Courier New", "Arial", "Tahoma", "Helvetica", "FreeSans" !important;
+    }
+
+    table th {
+        border: 1px solid lightgray;
+    }
+
+    table td {
+        position: relative;
+        vertical-align: top;
+    }
+
+    table .action_th {
+        width: 200px;
+    }
+
+    input[type=text], textarea {
+        width: calc(100% - 20px) !important;
+        margin: 0px;
+        padding: 12px;
+        border-radius: 5px;
+        border-width: 1px;
+        border-color: lightgray;
+        outline-color: burlywood;
+    }
+
+    input.hour, input.minute {
+        margin: 0;
+        float: left;
+        width: 60px !important;
+        margin-right: 5px;
+    }
+
+    .description {
+        resize: none;
+        overflow: hidden;
+        min-height: 33px;
+    }
+
+    button.start_time, button.end_time {
+        margin: 0;
+        float: left;
+        width: 57px !important;
+        margin-right: 5px;
+        height: 40px;
+        background-color: lavender;
+        border-width: 2px;
+        border-color: coral;
+        cursor: pointer;
+    }
+
+    .time_info {
+        display: inline-block;
+        width: 100%;
+        padding: 5px 0px;
+        color: crimson;
+        font-weight: bold;
+    }
+
+    .hover_actions {
+        opacity: 0;
+        position: absolute;
+        margin-left: calc(50% - 100px);
+        margin-top: -40px;
+        width: 220px;
+    }
+    div.title_container:hover + .hover_actions, .hover_actions:hover {
+        opacity: 1;
+    }
+
+    .add_new_row_bottom, .move_down, .move_up {
+        background-color: darkgray;
+        color: white;
+        font-weight: bold;
+        display: inline-block;
+        height: 19px;
+        text-align: center;
+        padding: 3px 8px 1px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    div.title_container.timer_running {
+        border-left: 10px solid red;
+        padding-left: 10px;
+    }
+
+    span.remove_row {
+        opacity: 0;
+        background-color: red;
+        color: white;
+        padding: 2px 0px 5px 5px;
+        width: 20px;
+        height: 25px;
+        cursor: pointer;
+        display: inline-block;
+        float: right;
+        text-align: center;
+        vertical-align: middle;
+        padding-top: 11px;
+        padding-right: 4px;
+        position: absolute;
+        top: 17px;
+        right: -17px;
+    }
+    div.time_container:hover > .remove_row, .remove_row:hover {
+        opacity: 1.0;
+    }
+    div.time_container {
+        width: 100%;
+        display: inline-block;
+    }
+
+    .hour_sign, .minute_sign {
+        position: absolute;
+        top: 15px;
+        left: 45px;
+        background-color: lightgray;
+        border-radius: 300px;
+        width: 19px;
+        height: 18px;
+        display: inline-block;
+    }
+    .hour_sign >span, .minute_sign >span {
+        margin-left: 5px;
+        margin-top: 1px;
+        display: inline-block;
+    }
+    .minute_sign {
+        left: 110px;
+    }
+
+    .time_info_pm {
+        border: 6px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 6px solid red;
+        width: 14px;
+        height: 14px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+        display: inline-block;
+        float: left;
+        margin-top: -4px;
+        margin-right: 4px;
+    }
+    /* Safari */
+    @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
