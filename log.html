@@ -125,7 +125,8 @@
             store_log_history();
         }
         else {
-            auto_grow(table.find("tbody").find("tr").last().find(".description")[0]);
+            table.find("tbody tr").first().remove();
+            add_new_line_at_position(0);
         }
 
         handle_key_press_hour_data();
@@ -427,7 +428,7 @@
     }
 
     table {
-        width: 99%;
+        width: 100%;
         border-spacing: 0px;
         text-indent: inherit;
         line-height: 1;
@@ -461,7 +462,7 @@
     input.hour, input.minute {
         margin: 0;
         float: left;
-        width: 60px !important;
+        width: 35px !important;
         margin-right: 5px;
     }
 
