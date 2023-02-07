@@ -9,7 +9,10 @@
         auto_grow_adjustment = 22;
     }
 
-    var body = $(document.body), table, skeletonTr;
+    var body = $(document.body), table, skeletonTr, line_number = 1;
+
+    const queryString = window.location.search;
+    const urlParams = Object.fromEntries(new URLSearchParams(queryString));
 
     $(document).ready(function () {
         document.body.classList.add(window.location.hostname.replace(/\./g, '_'));
@@ -18,7 +21,7 @@
 
         table = body.find("table.main");
 
-        skeletonTr = table.find("tbody tr").first().clone(true), line_number = 1;
+        skeletonTr = table.find("tbody tr").first().clone(true);
 
         skeletonTr.find(".title").val("");
         skeletonTr.find(".description").val("");
@@ -110,6 +113,13 @@
             store_log_history();
         });
 
+        initialize_log();
+
+        handle_key_press_hour_data();
+        handle_paste_hour_data();
+    });
+
+    function initialize_log() {
         if (workHistory.list.length > 0) {
             table.find("tbody tr").first().remove();
             workHistory.list.forEach(function (line) {
@@ -134,11 +144,23 @@
         else {
             table.find("tbody tr").first().remove();
             add_new_line_at_position(0);
-        }
+            if (urlParams['test-run'] !== undefined) {
+                setTimeout(function () {
+                    table.find("button.start_time").trigger("click");
+                    workHistory.list[0].title = "Task 1";
+                    workHistory.list[0].minute = 33;
+                    table.find(".title").val(workHistory.list[0].title);
+                    table.find(".minute").val(workHistory.list[0].minute);
 
-        handle_key_press_hour_data();
-        handle_paste_hour_data();
-    });
+                    add_new_line_at_position(1);
+                    workHistory.list[1].title = "Task 2";
+                    $(table.find(".title").last()).val(workHistory.list[1].title);
+
+                    store_log_history();
+                });
+            }
+        }
+    }
 
     function store_log_history() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(workHistory));
@@ -430,8 +452,8 @@
         <tfoot>
         <tr>
             <td></td>
-            <td style="text-align:right;padding:7px;"><span class="hour_final">0</span> Hour <span class="minute_final">0</span>
-                Minute
+            <td class="final_time_box">
+                <span class="hour_final">0</span> Hour <span class="minute_final">0</span> Minute
             </td>
         </tr>
         <tr>
@@ -622,6 +644,16 @@
         margin-top: -4px;
         margin-right: 4px;
     }
+
+    .final_time_box {
+        text-align:right;
+        padding:7px;
+        font-weight:bold !important;
+    }
+    .final_time_box >span {
+        font-weight:bold !important;
+    }
+
     /* Safari */
     @-webkit-keyframes spin {
         0% { -webkit-transform: rotate(0deg); }
