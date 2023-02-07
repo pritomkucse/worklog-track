@@ -2,12 +2,18 @@
 
 <script type="text/javascript">
     const STORAGE_KEY = "work_history_data_v4";
-    var workHistory = load_existing_data();
+    var workHistory = load_existing_data(), auto_grow_adjustment = 0;
     setTimeout(continue_timer, 999);
+
+    if (window.location.hostname === "pritomkumar.blogspot.com") {
+        auto_grow_adjustment = 22;
+    }
 
     var body = $(document.body), table, skeletonTr;
 
     $(document).ready(function () {
+        document.body.classList.add(window.location.hostname.replace(/\./g, '_'));
+
         body = $(document.body);
 
         table = body.find("table.main");
@@ -120,6 +126,7 @@
                 lastRow.addClass("line_number_" + line.line_number);
 
                 time_button_action(line.line_number, "check");
+                lastRow.find(".time_container").css("opacity", 1);
             });
             table.find("tbody tr").first().find(".hour").trigger("change");
             store_log_history();
@@ -152,7 +159,7 @@
 
     function auto_grow(element) {
         element.style.height = "5px";
-        element.style.height = (element.scrollHeight) + "px";
+        element.style.height = (element.scrollHeight - auto_grow_adjustment) + "px";
     }
 
     function load_existing_data() {
@@ -182,6 +189,16 @@
         else if (action === "end") {
             if (line.started_at !== undefined) {
                 var diff = calculate_time_interval(line.started_at);
+                if (diff[2] > 0) {
+                    if (line.seconds === undefined) {
+                        line.seconds = 0;
+                    }
+                    line.seconds += diff[2];
+                    if (line.seconds > 60) {
+                        diff[1] += 1;
+                        line.seconds = line.seconds - 60;
+                    }
+                }
                 if (diff[0] > 0) {
                     if (line.hour === "") line.hour = diff[0];
                     else line.hour = parseInt(line.hour) + diff[0];
@@ -189,6 +206,11 @@
                 if (diff[1] > 0) {
                     if (line.minute === "") line.minute = diff[1];
                     else line.minute = parseInt(line.minute) + diff[1];
+                }
+                while (line.minute !== "" && line.minute >= 60) {
+                    if (line.hour === "") line.hour = 1;
+                    else line.hour = parseInt(line.hour) + 1;
+                    line.minute = line.minute - 60;
                 }
 
                 delete line.started_at;
@@ -203,14 +225,17 @@
             }
         }
         else if (action === "check") {
-            tr.find(".time_info").hide();
             if (line.started_at === undefined) {
+                tr.find(".time_info").hide();
                 tr.find(".start_time").show();
                 tr.find(".end_time").hide();
                 tr.find(".title_container").removeClass("timer_running");
             }
             else {
                 tr.find(".time_info").show();
+                tr.find(".running_hours").html("0");
+                tr.find(".running_minutes").html("0");
+
                 tr.find(".start_time").hide();
                 tr.find(".end_time").show();
                 tr.find(".title_container").addClass("timer_running");
@@ -223,17 +248,15 @@
         var from = new Date(started_at);
         var target = new Date(today.toISOString().split("T")[0] + " " + today.toTimeString().substring(0, 8));
 
-        var diffMs = (target - from);
-        var diffDays = Math.floor(diffMs / 86400000); // days
-        var diffHrs = Math.floor((diffMs % 86400000) / 3600000) + (diffDays * 24); // hours
-        var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
-
-        while (diffMins >= 60) {
-            diffHrs++;
-            diffMins = diffMins - 60;
+        var diff_as_sec = Math.floor((target - from) / 1000);
+        var diff_as_min = Math.floor(diff_as_sec / 60), diff_as_hour = 0;
+        diff_as_sec = diff_as_sec - (diff_as_min * 60);
+        while (diff_as_min >= 60) {
+            diff_as_hour++;
+            diff_as_min = diff_as_min - 60;
         }
 
-        return [diffHrs, diffMins];
+        return [diff_as_hour, diff_as_min, diff_as_sec, diff_as_sec >= 10 ? diff_as_sec : "0" + diff_as_sec];
     }
 
     function continue_timer() {
@@ -243,17 +266,17 @@
                 var diff = calculate_time_interval(line.started_at);
                 tr.find(".time_info").show();
                 tr.find(".running_hours").html(diff[0]);
-                tr.find(".running_minutes").html(diff[1]);
+                tr.find(".running_minutes").html(diff[1] + ":" + diff[3]);
             }
         });
-        setTimeout(continue_timer, 9999);
+        setTimeout(continue_timer, 999);
     }
 
     var pattern = new RegExp("(^([0-9]{0,12}?)$)");
     function handle_key_press_hour_data() {
         $(document.body).on("keypress", "input[type='text'].number", function (e) {
             if (e.which == 0 || e.which == 8) return true;
-            var v = getTextFieldValue(this, String.fromCharCode(e.which));
+            var v = get_text_field_value(this, String.fromCharCode(e.which));
             return pattern.test(v);
         });
     }
@@ -271,12 +294,12 @@
             else if (e.clipboardData && e.clipboardData.getData) {
                 v = e.clipboardData.getData('text/plain');
             }
-            v = getTextFieldValue(f[0], v);
+            v = get_text_field_value(f[0], v);
             if (!pattern.test(v)) e.preventDefault();
         });
     }
 
-    function getTextFieldValue(input, nv) {
+    function get_text_field_value(input, nv) {
         var v = input.value, i = input.selectionStart, j = input.selectionEnd;
 
         if (i == 0 && j == v.length) return nv;
@@ -299,6 +322,7 @@
             auto_grow(tr.find(".description")[0]);
             time_button_action(parseInt(tr.data("line_number")), "check");
             tr.find(".hour").trigger("change");
+            tr.find(".time_container").css("opacity", 1);
         }
         else {
             var wh = workHistory.list[position - 1];
@@ -315,6 +339,7 @@
             auto_grow(tr.find(".description")[0]);
             time_button_action(parseInt(tr.data("line_number")), "check");
             tr.find(".hour").trigger("change");
+            tr.find(".time_container").css("opacity", 1);
         }
     }
 
@@ -375,9 +400,10 @@
                 <div class="title_container">
                     <b style="display:inline-block;width:100%;">Title:</b>
                     <input type="text" class="title" placeholder="Title"/>
+
+                    <BR/><BR/>
                     Description:
                     <textarea class="description" oninput="auto_grow(this)"></textarea>
-                    <div style="height:30px;"></div>
                 </div>
                 <div class="hover_actions">
                     <span class="move_up" title="Move Up">move up</span>
@@ -386,7 +412,7 @@
                 </div>
             </td>
             <td>
-                <div class="time_container">
+                <div class="time_container" style="opacity:0">
                     <b style="display:inline-block;width:100%;">Time:</b>
                     <input type="text" class="hour number" placeholder="Hour" maxlength="2"/>
                     <input type="text" class="minute number" placeholder="Minute" maxlength="2"/>
@@ -432,11 +458,16 @@
         border-spacing: 0px;
         text-indent: inherit;
         line-height: 1;
-        font-family: "Courier New" !important;
+    }
+
+    input, textarea, button, span, div, td, th {
         font: 15px "Courier New", "Arial", "Tahoma", "Helvetica", "FreeSans" !important;
     }
 
     table th {
+        height: 50px;
+        color: blue;
+        font-weight: bold !important;
         border: 1px solid lightgray;
     }
 
@@ -446,7 +477,7 @@
     }
 
     table .action_th {
-        width: 200px;
+        width: 230px;
     }
 
     input[type=text], textarea {
@@ -462,20 +493,20 @@
     input.hour, input.minute {
         margin: 0;
         float: left;
-        width: 35px !important;
+        width: 65px !important;
         margin-right: 5px;
     }
 
     .description {
         resize: none;
         overflow: hidden;
-        min-height: 33px;
+        min-height: 5px;
     }
 
     button.start_time, button.end_time {
         margin: 0;
         float: left;
-        width: 57px !important;
+        width: 61px !important;
         margin-right: 5px;
         height: 40px;
         background-color: lavender;
@@ -496,7 +527,7 @@
         opacity: 0;
         position: absolute;
         margin-left: calc(50% - 100px);
-        margin-top: -40px;
+        margin-top: -15px;
         width: 220px;
         text-align: center;
     }
@@ -521,7 +552,7 @@
     }
 
     div.title_container.timer_running {
-        border-left: 10px solid red;
+        border-left: 10px solid coral;
         padding-left: 10px;
     }
 
@@ -531,7 +562,7 @@
         color: white;
         padding: 2px 0px 5px 5px;
         width: 20px;
-        height: 25px;
+        height: 24px;
         cursor: pointer;
         display: inline-block;
         float: right;
@@ -540,8 +571,8 @@
         padding-top: 11px;
         padding-right: 4px;
         position: absolute;
-        top: 17px;
-        right: -17px;
+        top: 38px;
+        right: 0px;
     }
     div.time_container:hover > .remove_row, .remove_row:hover {
         opacity: 1.0;
@@ -551,10 +582,18 @@
         display: inline-block;
     }
 
+    div.title_container, div.time_container {
+        margin-top: 20px;
+    }
+    div.title_container {
+        border-left: 4px solid darkgray;
+        padding-left: 10px;
+    }
+
     .hour_sign, .minute_sign {
         position: absolute;
-        top: 15px;
-        left: 45px;
+        top: 38px;
+        left: 47px;
         background-color: lightgray;
         border-radius: 300px;
         width: 19px;
@@ -567,7 +606,7 @@
         display: inline-block;
     }
     .minute_sign {
-        left: 110px;
+        left: 117px;
     }
 
     .time_info_pm {
