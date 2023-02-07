@@ -149,6 +149,8 @@
                     table.find("button.start_time").trigger("click");
                     workHistory.list[0].title = "Task 1";
                     workHistory.list[0].minute = 33;
+                    store_log_history();
+
                     table.find(".title").val(workHistory.list[0].title);
                     table.find(".minute").val(workHistory.list[0].minute);
 
