@@ -9,4 +9,4 @@ At very end of the preview you can see total time logged.
 
 You can download data as Html format (Table).
 
-![Preview of Worklog Mini Tool](WL 1.png?raw=true "Preview of Worklog Mini Tool")
+![Preview of Worklog Mini Tool](WL-1.png?raw=true "Preview of Worklog Mini Tool")
