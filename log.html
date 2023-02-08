@@ -75,6 +75,9 @@
             var tr = $(this).closest("tr");
             do_move_down(tr);
         });
+        table.find(".download_as_html").on("click", function () {
+            download_as_html();
+        });
 
         table.find("tbody").on("change", ".hour, .minute, .title, .description", function () {
             var hour = 0, minute = 0, rows = [];
@@ -156,9 +159,9 @@
 
                     add_new_line_at_position(1);
                     workHistory.list[1].title = "Task 2";
-                    $(table.find(".title").last()).val(workHistory.list[1].title);
-
                     store_log_history();
+
+                    $(table.find(".title").last()).val(workHistory.list[1].title);
                 });
             }
         }
@@ -222,6 +225,10 @@
                         diff[1] += 1;
                         line.seconds = line.seconds - 60;
                     }
+                    if (line.seconds >= 30) {
+                        diff[1] += 1;
+                        line.seconds = 0;
+                    }
                 }
                 if (diff[0] > 0) {
                     if (line.hour === "") line.hour = diff[0];
@@ -280,7 +287,12 @@
             diff_as_min = diff_as_min - 60;
         }
 
-        return [diff_as_hour, diff_as_min, diff_as_sec, diff_as_sec >= 10 ? diff_as_sec : "0" + diff_as_sec];
+        return [
+            diff_as_hour,
+            diff_as_min,
+            diff_as_sec,
+            diff_as_sec >= 10 ? diff_as_sec : "0" + diff_as_sec
+        ];
     }
 
     function continue_timer() {
@@ -406,6 +418,26 @@
             minute: ""
         };
     }
+
+    function download_as_html() {
+        var trBody = "";
+        var tr = body.find("#exportAsHtmlFormat").find("tr").clone(true);
+        workHistory.list.forEach(function (row) {
+            tr.find("td.title").html(row.title);
+            tr.find("td.description").html(row.description.replace(/\r\n/g, '\n').replace(/\n/g, '<BR>'));
+            tr.find("td.time").html((row.hour === '' || row.hour === 0 ? '' : row.hour + "H ") + (row.minute === '' ? 0 : row.minute) + "M");
+            trBody += tr[0].outerHTML;
+        });
+
+        var elHtml = $.trim(body.find("#export").val());
+        elHtml = elHtml.replace(/XXXXXXXXXXXXXXXXXXXXXXXXXXX/g, trBody);
+
+        var link = document.createElement('a');
+
+        link.setAttribute('download', "worklog.html");
+        link.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(elHtml));
+        link.click();
+    }
 </script>
 
 <div id="main_div">
@@ -463,12 +495,150 @@
             <td style="text-align:right;padding:7px;">
                 <button style="width:100%;padding:5px;" class="add_row">+ Row</button>
                 <div style="height:7px;"></div>
+                <button style="width:100%;padding:5px;" class="download_as_html">Download As Html</button>
+                <div style="height:7px;"></div>
                 <button style="width:100%;padding:5px;" class="clear_rows">Clear Rows</button>
             </td>
         </tr>
         </tfoot>
 
     </table>
+
+    <table id="exportAsHtmlFormat" style="display:none">
+        <tr class="Body">
+            <td class="title">
+                Task 1
+            </td>
+            <td class="description">
+                https://prod.webmascot.com/bitbucket/projects/PDX/repos/exsited-core/pull-requests/1857/overview
+            </td>
+            <td class="time">
+                20m
+            </td>
+        </tr>
+    </table>
+
+<textarea id="export" style="height:500px;display:none;">
+<html>
+<head>
+    <meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+    <meta name=Generator content="Microsoft Word 15 (filtered)">
+    <style>
+        @font-face {
+            font-family: Wingdings;
+            panose-1: 5 0 0 0 0 0 0 0 0 0;
+        }
+        @font-face {
+            font-family: Vrinda;
+            panose-1: 0 0 4 0 0 0 0 0 0 0;
+        }
+        @font-face {
+            font-family: "Cambria Math";
+            panose-1: 2 4 5 3 5 4 6 3 2 4;
+        }
+        @font-face {
+            font-family: "Calibri Light";
+            panose-1: 2 15 3 2 2 2 4 3 2 4;
+        }
+        @font-face {
+            font-family: Calibri;
+            panose-1: 2 15 5 2 2 2 4 3 2 4;
+        }
+        h1 {
+            mso-style-link: "Heading 1 Char";
+            margin-top: 12.0pt;
+            margin-right: 0in;
+            margin-bottom: 0in;
+            margin-left: 0in;
+            margin-bottom: .0001pt;
+            line-height: 105%;
+            page-break-after: avoid;
+            font-size: 16.0pt;
+            font-family: "Calibri Light", "sans-serif";
+            color: #2E74B5;
+            font-weight: normal;
+        }
+        a:link {
+            color: #0563C1;
+            text-decoration: underline;
+        }
+        a:visited {
+            color: #954F72;
+            text-decoration: underline;
+        }
+        p {
+            margin-right: 0in;
+            margin-left: 0in;
+            font-size: 12.0pt;
+            font-family: "Times New Roman", "serif";
+        }
+        @page WordSection1 {
+            size: 8.5in 11.0in;
+            margin: 1.0in 1.0in 1.0in 1.0in;
+        }
+        div.WordSection1 {
+            page: WordSection1;
+        }
+        ol {
+            margin-bottom: 0in;
+        }
+        ul {
+            margin-bottom: 0in;
+        }
+        .MsoTableGrid {
+            border-collapse:collapse;
+            border:none;
+        }
+        .MsoTableGrid .Header {
+            height:24.25pt;
+        }
+        .MsoTableGrid .Header td {
+            border:solid windowtext 1.0pt;
+            background:#D0CECE;
+            padding:6pt 6pt 6pt 6pt;
+            font-weight: bold;
+            margin-top:10pt;
+            font-size:12.0pt;
+            line-height:105%;
+            color:black;
+        }
+        .MsoTableGrid .Header td.title {
+
+        }
+        .MsoTableGrid .Header td.description {
+
+        }
+        .MsoTableGrid .Header td.time {
+            width:300px;
+        }
+        .MsoTableGrid .Body td {
+            padding:6pt 6pt 6pt 6pt;
+            border:solid windowtext 1.0pt;
+        }
+    </style>
+
+</head>
+
+<body lang=EN-US link="#0563C1" vlink="#954F72">
+<div class=WordSection1>
+    <table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0 style=''>
+        <tr class="Header">
+            <td class="title">
+                Issues/Tasks
+            </td>
+            <td class="description">
+                Description
+            </td>
+            <td class="time">
+                Time
+            </td>
+        </tr>
+        XXXXXXXXXXXXXXXXXXXXXXXXXXX
+    </table>
+</div>
+</body>
+</html>
+</textarea>
 
 </div>
 
