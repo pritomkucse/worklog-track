@@ -14,6 +14,9 @@
     const queryString = window.location.search;
     const urlParams = Object.fromEntries(new URLSearchParams(queryString));
 
+    var expression = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/gi;
+    var REGEX_URL_VALIDATION = new RegExp(expression);
+
     $(document).ready(function () {
         document.body.classList.add(window.location.hostname.replace(/\./g, '_'));
 
@@ -422,10 +425,35 @@
     function download_as_html() {
         var trBody = "";
         var tr = body.find("#exportAsHtmlFormat").find("tr").clone(true);
+
+
         workHistory.list.forEach(function (row) {
             tr.find("td.title").html(row.title);
-            tr.find("td.description").html(row.description.replace(/\r\n/g, '\n').replace(/\n/g, '<BR>'));
             tr.find("td.time").html((row.hour === '' || row.hour === 0 ? '' : row.hour + "H ") + (row.minute === '' ? 0 : row.minute) + "M");
+
+            var description = [];
+            row.description.replace(/\r\n/g, '\n').split("\n").forEach(function (t) {
+                if (t.match(REGEX_URL_VALIDATION)) {
+                    description.push("<a href='" + t + "'>" + t + "</a>");
+                }
+                else {
+                    description.push(t);
+                }
+            });
+            tr.find("td.description").html(description.join("<BR>"));
+
+            var title = [];
+            row.title.split(" ").forEach(function (t) {
+                if (t.match(REGEX_URL_VALIDATION)) {
+                    title.push("<a href='" + t + "'>" + t + "</a>");
+                }
+                else {
+                    title.push(t);
+                }
+            });
+            tr.find("td.title").html(title.join(" "));
+
+            tr.find("td").removeAttr("style");
             trBody += tr[0].outerHTML;
         });
 
@@ -506,44 +534,17 @@
 
     <table id="exportAsHtmlFormat" style="display:none">
         <tr class="Body">
-            <td class="title">
-                Task 1
-            </td>
-            <td class="description">
-                https://prod.webmascot.com/bitbucket/projects/PDX/repos/exsited-core/pull-requests/1857/overview
-            </td>
-            <td class="time">
-                20m
-            </td>
+            <td class="title"></td>
+            <td class="description"></td>
+            <td class="time"></td>
         </tr>
     </table>
 
 <textarea id="export" style="height:500px;display:none;">
 <html>
 <head>
-    <meta http-equiv=Content-Type content="text/html; charset=windows-1252">
-    <meta name=Generator content="Microsoft Word 15 (filtered)">
+    <meta http-equiv=Content-Type content="text/html; charset=UTF-8">
     <style>
-        @font-face {
-            font-family: Wingdings;
-            panose-1: 5 0 0 0 0 0 0 0 0 0;
-        }
-        @font-face {
-            font-family: Vrinda;
-            panose-1: 0 0 4 0 0 0 0 0 0 0;
-        }
-        @font-face {
-            font-family: "Cambria Math";
-            panose-1: 2 4 5 3 5 4 6 3 2 4;
-        }
-        @font-face {
-            font-family: "Calibri Light";
-            panose-1: 2 15 3 2 2 2 4 3 2 4;
-        }
-        @font-face {
-            font-family: Calibri;
-            panose-1: 2 15 5 2 2 2 4 3 2 4;
-        }
         h1 {
             mso-style-link: "Heading 1 Char";
             margin-top: 12.0pt;
@@ -554,7 +555,6 @@
             line-height: 105%;
             page-break-after: avoid;
             font-size: 16.0pt;
-            font-family: "Calibri Light", "sans-serif";
             color: #2E74B5;
             font-weight: normal;
         }
@@ -570,7 +570,6 @@
             margin-right: 0in;
             margin-left: 0in;
             font-size: 12.0pt;
-            font-family: "Times New Roman", "serif";
         }
         @page WordSection1 {
             size: 8.5in 11.0in;
@@ -586,6 +585,7 @@
             margin-bottom: 0in;
         }
         .MsoTableGrid {
+            width: 100%;
             border-collapse:collapse;
             border:none;
         }
@@ -597,9 +597,7 @@
             background:#D0CECE;
             padding:6pt 6pt 6pt 6pt;
             font-weight: bold;
-            margin-top:10pt;
             font-size:12.0pt;
-            line-height:105%;
             color:black;
         }
         .MsoTableGrid .Header td.title {
@@ -609,9 +607,10 @@
 
         }
         .MsoTableGrid .Header td.time {
-            width:300px;
+
         }
         .MsoTableGrid .Body td {
+            word-break: break-all;
             padding:6pt 6pt 6pt 6pt;
             border:solid windowtext 1.0pt;
         }
