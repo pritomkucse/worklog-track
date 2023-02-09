@@ -1,0 +1,194 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.5/jspdf.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var form = $('.form'),
+            cache_width = form.width(),
+            a4 = [595.28, 841.89]; // for a4 size paper width and height
+
+        $('#create_pdf').on('click', function () {
+            var pdf = new jsPDF('p', 'pt', 'letter');
+            var specialElementHandlers = {
+                // element with id of "bypass" - jQuery style selector
+                '#bypassme': function(element, renderer){
+                    // true = "handled elsewhere, bypass text extraction"
+                    return true
+                }
+            };
+            var margins = {
+                top: 70,
+                bottom: 40,
+                left: 30,
+                width: 550
+            };
+            pdf.setProperties({
+                title: 'Test PDF Document',
+                subject: 'This is the subject',
+                author: 'author',
+                keywords: 'generated, javascript, web 2.0, ajax',
+                creator: 'author'
+            });
+            var options = {
+                orientation: 'p',
+                pagesplit: true, //include this in your code
+                width: margins.width,
+                elementHandlers: specialElementHandlers
+            };
+            pdf.fromHTML(document.getElementById('html-2-pdfwrapper'), margins.left, margins.top, options, function (dispose) {
+                    // dispose: object with X, Y of the last line add to the PDF
+                    //          this allow the insertion of new lines after html
+                    headerFooterFormatting(pdf, margins);
+                    pdf.save('Test.pdf');
+                },
+                margins
+            )
+        });
+
+        function headerFooterFormatting(doc, margins) {
+            var totalPages  = doc.internal.getNumberOfPages();
+
+            for(var i = totalPages; i >= 1; i--)
+            { //make this page, the current page we are currently working on.
+                doc.setPage(i);
+
+                header(doc, margins);
+
+                //footer(doc, i, totalPages);
+
+            }
+
+            function header(doc, margins)
+            {
+                doc.setFontSize(30);
+                doc.setTextColor(40);
+                doc.setFontStyle('normal');
+
+                doc.text("Report Header Template", margins.left + 50, 40 );
+
+                doc.line(3, 70, margins.width + 43,70); // horizontal line
+            }
+        }
+    });
+</script>
+<button id="create_pdf">Generate PDF</button>
+<div id="html-2-pdfwrapper">
+    <div>
+        font size span. Followed by long parent-less text node. asdf qwer asdf zxcv qsasfd qwer qwasfd zcxv sdf qwer qwe sdf wer qwer asdf zxv.
+        Serif Inner DIV (bad markup, but testing block detection)
+    </div>
+    <table>
+        <tbody>
+        <tr>
+            <td width="300">Company Name</td>
+            <td width="600">Employee Name</td>
+            <td width="300">Country</td>
+        </tr>
+        <tr>
+            <td>Dell</td>
+            <td>Maria</td>
+            <td>Germany</td>
+        </tr>
+        <tr>
+            <td>Asus</td>
+            <td>Francisco</td>
+            <td>Mexico</td>
+        </tr>
+        <tr>
+            <td>Apple</td>
+            <td>Roland</td>
+            <td>Austria</td>
+        </tr>
+        <tr>
+            <td>HP</td>
+            <td>Helen</td>
+            <td>UK</td>
+        </tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        <tr><td>Lenovofffffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee</td><td>spdf/1.3.5/jspdf.min.jsddddddddddddddddddddddddddddddddd</td><td>Yoshi</td></tr>
+        </tbody>
+    </table>
+</div>
+<style>
+    .page-break {
+        page-break-after: always;
+        page-break-inside: avoid;
+        clear:both;
+    }
+    .page-break-before {
+        page-break-before: always;
+        page-break-inside: avoid;
+        clear:both;
+    }
+    #html-2-pdfwrapper{
+        position: absolute;
+        left: 20px;
+        top: 50px;
+        bottom: 0;
+        overflow: auto;
+        width: 600px;
+    }
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    tr, tbody {
+        width: 100%;
+    }
+
+    td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+        word-break: break-all;
+    }
+
+    tr:nth-child(odd) {
+        background-color: #dddddd;
+    }
+</style>

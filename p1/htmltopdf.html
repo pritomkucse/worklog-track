@@ -1,0 +1,111 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+
+<script>
+    function doPDF() {
+        var date = new Date().toISOString().split("T")[0];
+        var opt = {
+            margin:       0.5,
+            filename:     'work-log-report-' + date + '.pdf',
+            enableLinks:  false,
+            pagebreak:    { mode: 'avoid-all' },
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        var element = document.getElementById('element-to-print');
+        html2pdf().from(element).set(opt).toPdf().get('pdf').then(function (pdf) {
+            console.log("Done");
+
+            var totalPages = pdf.internal.getNumberOfPages();
+            for (var i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(10);
+                pdf.setTextColor(150);
+                pdf.text('Work Log Report - ' + date, (pdf.internal.pageSize.getWidth()/2) - 0.99, 0.35);
+                pdf.text('Page ' + i + ' of ' + totalPages, (pdf.internal.pageSize.getWidth()/2) - 0.3, pdf.internal.pageSize.getHeight() - 0.25);
+            }
+        }).save();
+    }
+</script>
+<button onclick="doPDF()">PDF</button>
+<div id="element-to-print">
+    <div>
+        html2pdf.js converts any webpage or element into a printable PDF entirely client-side using html2canvas and jsPDF.
+    </div>
+    <table>
+        <tbody>
+        <tr>
+            <td width="300">Company Name</td>
+            <td width="400">Employee Name</td>
+            <td width="100px">Country</td>
+        </tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        </tbody>
+    </table>
+</div>
+<style>
+    #element-to-print table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    #element-to-print tr, #element-to-print tbody {
+        width: 100%;
+    }
+
+    #element-to-print td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+        word-break: break-all;
+    }
+
+    #element-to-print tr:nth-child(odd) {
+        background-color: #dddddd;
+    }
+</style>

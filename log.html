@@ -5,6 +5,20 @@
     var workHistory = load_existing_data(), auto_grow_adjustment = 0;
     setTimeout(continue_timer, 999);
 
+    var blurred = false;
+    window.onblur = function() {
+        blurred = true;
+    };
+    window.onfocus = function() {
+        if (localStorage.getItem("ignore_reload_browser") === null) {
+            localStorage.removeItem("ignore_reload_browser");
+            if (blurred) location.reload();
+        }
+        else {
+            localStorage.removeItem("ignore_reload_browser");
+        }
+    };
+
     if (window.location.hostname === "pritomkumar.blogspot.com") {
         auto_grow_adjustment = 22;
     }
@@ -254,6 +268,7 @@
                 tr.find(".hour").val(line.hour);
                 tr.find(".minute").val(line.minute);
 
+                localStorage.setItem("ignore_reload_browser", "1");
                 alert(diff[0] + " hours, " + diff[1] + " minutes added");
                 body.find("tbody tr").first().find(".hour").trigger("change");
             }
