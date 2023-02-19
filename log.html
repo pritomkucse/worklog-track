@@ -10,12 +10,20 @@
         blurred = true;
     };
     window.onfocus = function() {
-        if (localStorage.getItem("ignore_reload_browser") === null) {
-            localStorage.removeItem("ignore_reload_browser");
-            if (blurred) location.reload();
+        var lastReloaded = localStorage.getItem("last_time_tab_reloaded");
+        if (lastReloaded !== null) {
+            lastReloaded = parseFloat(lastReloaded);
+            lastReloaded = (new Date().getTime() - lastReloaded) / 1000; // value as seconds
+            console.log("Diff="+ lastReloaded + " seconds");
+            if (lastReloaded > (60 * 10)) {
+                localStorage.setItem("last_time_tab_reloaded", new Date().getTime());
+                if (blurred) {
+                    location.reload();
+                }
+            }
         }
         else {
-            localStorage.removeItem("ignore_reload_browser");
+            localStorage.setItem("last_time_tab_reloaded", new Date().getTime());
         }
     };
 
@@ -100,10 +108,12 @@
             var hour = 0, minute = 0, rows = [];
             table.find("tbody").find("tr").each(function () {
                 var thiz = $(this);
-                var hour2 = $.trim(thiz.find(".hour").val());
-                var minute2 = $.trim(thiz.find(".minute").val());
-                if (hour2.length > 0) hour += parseInt(hour2);
-                if (minute2.length > 0) minute += parseInt(minute2);
+                var hour2 = parseInt($.trim(thiz.find(".hour").val()));
+                var minute2 = parseInt($.trim(thiz.find(".minute").val()));
+                hour2 = isNaN(hour2) || hour2 < 0 ? 0 : hour2;
+                minute2 = isNaN(minute2) || minute2 < 0 ? 0 : minute2;
+                if (hour2.length > 0) hour += hour2;
+                if (minute2.length > 0) minute += minute2;
 
                 var line = {};
                 if (thiz.data("line_number") === undefined) {
@@ -121,8 +131,8 @@
                 line.line_number = thiz.data("line_number");
                 line.title = thiz.find(".title").val();
                 line.description = thiz.find(".description").val();
-                line.hour = thiz.find(".hour").val();
-                line.minute = thiz.find(".minute").val();
+                line.hour = hour2;
+                line.minute = minute2;
             });
             while (minute >= 60) {
                 hour++;
@@ -225,7 +235,7 @@
         if (action === "start") {
             if (line.started_at === undefined) {
                 var today = new Date();
-                line.started_at = today.toISOString().split("T")[0] + " " + today.toTimeString().substring(0, 8);
+                line.started_at = convert_date_to_string(today);
                 store_log_history();
                 time_button_action(line_number, "check");
             }
@@ -233,33 +243,41 @@
         else if (action === "end") {
             if (line.started_at !== undefined) {
                 var diff = calculate_time_interval(line.started_at);
-                if (diff[2] > 0) {
+                if (diff.sec > 0) {
                     if (line.seconds === undefined) {
                         line.seconds = 0;
                     }
-                    line.seconds += diff[2];
+                    line.seconds += diff.sec;
                     if (line.seconds > 60) {
-                        diff[1] += 1;
+                        diff.min += 1;
                         line.seconds = line.seconds - 60;
                     }
                     if (line.seconds >= 30) {
-                        diff[1] += 1;
+                        diff.min += 1;
                         line.seconds = 0;
                     }
                 }
-                if (diff[0] > 0) {
-                    if (line.hour === "") line.hour = diff[0];
-                    else line.hour = parseInt(line.hour) + diff[0];
+                if (diff.hour > 0) {
+                    if (line.hour === "") line.hour = diff.hour;
+                    else line.hour = parseInt(line.hour) + diff.hour;
                 }
-                if (diff[1] > 0) {
-                    if (line.minute === "") line.minute = diff[1];
-                    else line.minute = parseInt(line.minute) + diff[1];
+                if (diff.min > 0) {
+                    if (line.minute === "") line.minute = diff.min;
+                    else line.minute = parseInt(line.minute) + diff.min;
                 }
                 while (line.minute !== "" && line.minute >= 60) {
                     if (line.hour === "") line.hour = 1;
                     else line.hour = parseInt(line.hour) + 1;
                     line.minute = line.minute - 60;
                 }
+
+                if (line.timings === undefined) {
+                    line.timings = [];
+                }
+                line.timings.push({
+                    started_at: line.started_at, finished_at: diff.finished_at,
+                    hour: diff.hour, minute: diff.min
+                });
 
                 delete line.started_at;
                 store_log_history();
@@ -268,8 +286,8 @@
                 tr.find(".hour").val(line.hour);
                 tr.find(".minute").val(line.minute);
 
-                localStorage.setItem("ignore_reload_browser", "1");
-                alert(diff[0] + " hours, " + diff[1] + " minutes added");
+                localStorage.setItem("last_time_tab_reloaded", new Date().getTime());
+                alert(diff.hour + " hours, " + diff.min + " minutes added");
                 body.find("tbody tr").first().find(".hour").trigger("change");
             }
         }
@@ -293,11 +311,11 @@
     }
 
     function calculate_time_interval(started_at) {
-        var today = new Date();
+        var today = convert_date_to_string(new Date());
         var from = new Date(started_at);
-        var target = new Date(today.toISOString().split("T")[0] + " " + today.toTimeString().substring(0, 8));
+        var target = new Date(today);
 
-        var diff_as_sec = Math.floor((target - from) / 1000);
+        var diff_as_sec = Math.floor((target.getTime() - from.getTime()) / 1000);
         var diff_as_min = Math.floor(diff_as_sec / 60), diff_as_hour = 0;
         diff_as_sec = diff_as_sec - (diff_as_min * 60);
         while (diff_as_min >= 60) {
@@ -305,22 +323,25 @@
             diff_as_min = diff_as_min - 60;
         }
 
-        return [
-            diff_as_hour,
-            diff_as_min,
-            diff_as_sec,
-            diff_as_sec >= 10 ? diff_as_sec : "0" + diff_as_sec
-        ];
+        return {
+            hour: diff_as_hour,
+            min: diff_as_min,
+            sec: diff_as_sec,
+            sec_display: diff_as_sec >= 10 ? diff_as_sec : "0" + diff_as_sec,
+            finished_at: today
+        };
     }
-
+    function convert_date_to_string(date) {
+        return date.toISOString().split("T")[0] + " " + date.toTimeString().substring(0, 8);
+    }
     function continue_timer() {
         workHistory.list.forEach(function (line) {
             if (line.started_at !== undefined) {
                 var tr = $(document.body).find("tr.line_number_" + line.line_number);
                 var diff = calculate_time_interval(line.started_at);
                 tr.find(".time_info").show();
-                tr.find(".running_hours").html(diff[0]);
-                tr.find(".running_minutes").html(diff[1] + ":" + diff[3]);
+                tr.find(".running_hours").html(diff.hour);
+                tr.find(".running_minutes").html(diff.min + ":" + diff.sec_display);
             }
         });
         setTimeout(continue_timer, 999);
