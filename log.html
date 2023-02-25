@@ -1,4 +1,5 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
 
 <script type="text/javascript">
     const STORAGE_KEY = "work_history_data_v4";
@@ -102,6 +103,12 @@
         });
         table.find(".download_as_html").on("click", function () {
             download_as_html();
+        });
+        table.find(".download_as_json").on("click", function () {
+            download_as_json();
+        });
+        table.find(".download_as_pdf").on("click", function () {
+            download_as_pdf();
         });
 
         table.find("tbody").on("change", ".hour, .minute, .title, .description", function () {
@@ -274,10 +281,12 @@
                 if (line.timings === undefined) {
                     line.timings = [];
                 }
-                line.timings.push({
-                    started_at: line.started_at, finished_at: diff.finished_at,
-                    hour: diff.hour, minute: diff.min
-                });
+                if (diff.hour > 0 || diff.min > 0) {
+                    line.timings.push({
+                        started_at: line.started_at, finished_at: diff.finished_at,
+                        hour: diff.hour, minute: diff.min
+                    });
+                }
 
                 delete line.started_at;
                 store_log_history();
@@ -497,10 +506,55 @@
         elHtml = elHtml.replace(/XXXXXXXXXXXXXXXXXXXXXXXXXXX/g, trBody);
 
         var link = document.createElement('a');
-
         link.setAttribute('download', "worklog.html");
         link.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(elHtml));
         link.click();
+    }
+
+    function download_as_json() {
+        var json = [];
+        workHistory.list.forEach(function (row) {
+            var line = {
+                title: row.title, description: row.description, hour: row.hour, minute: row.minute, time_slots: []
+            };
+            if (row.timings !== undefined) {
+                row.timings.forEach(function (t) {
+                    line.time_slots.push({started_at: t.started_at, finished_at: t.finished_at, hour: t.hour, minute: t.minute});
+                });
+            }
+            json.push(line);
+        });
+
+        var link = document.createElement('a');
+        link.setAttribute('download', "worklog.json");
+        link.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(JSON.stringify(json)));
+        link.click();
+    }
+
+    function download_as_pdf() {
+        var date = new Date().toISOString().split("T")[0];
+        var opt = {
+            margin:       0.5,
+            filename:     'work-log-report-' + date + '.pdf',
+            enableLinks:  false,
+            pagebreak:    { mode: 'avoid-all' },
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        var element = document.getElementById('element-to-print');
+        html2pdf().from(element).set(opt).toPdf().get('pdf').then(function (pdf) {
+            console.log("Done");
+
+            var totalPages = pdf.internal.getNumberOfPages();
+            for (var i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(10);
+                pdf.setTextColor(150);
+                pdf.text('Work Log Report - ' + date, (pdf.internal.pageSize.getWidth()/2) - 0.99, 0.35);
+                pdf.text('Page ' + i + ' of ' + totalPages, (pdf.internal.pageSize.getWidth()/2) - 0.3, pdf.internal.pageSize.getHeight() - 0.25);
+            }
+        }).save();
     }
 </script>
 
@@ -519,7 +573,7 @@
             <td>
                 <div class="title_container">
                     <b style="display:inline-block;width:100%;">Title:</b>
-                    <input type="text" class="title" placeholder="Title"/>
+                    <input type="text" class="title" placeholder="Title" autocomplete="off"/>
 
                     <BR/><BR/>
                     Description:
@@ -559,7 +613,11 @@
             <td style="text-align:right;padding:7px;">
                 <button style="width:100%;padding:5px;" class="add_row">+ Row</button>
                 <div style="height:7px;"></div>
-                <button style="width:100%;padding:5px;" class="download_as_html">Download As Html</button>
+                <button style="width:100%;padding:5px;" class="download_as_html">Export As Html</button>
+                <div style="height:7px;"></div>
+                <button style="width:100%;padding:5px;" class="download_as_json">Export As JSON</button>
+                <div style="height:7px;"></div>
+                <button style="width:100%;padding:5px;" class="download_as_pdf">Export As PDF</button>
                 <div style="height:7px;"></div>
                 <button style="width:100%;padding:5px;" class="clear_rows">Clear Rows</button>
             </td>
@@ -567,20 +625,19 @@
         </tfoot>
 
     </table>
+</div>
 
-    <table id="exportAsHtmlFormat" style="display:none">
-        <tr class="Body">
-            <td class="title"></td>
-            <td class="description"></td>
-            <td class="time"></td>
-        </tr>
-    </table>
 
+<!-- Export as Html -->
+<table id="exportAsHtmlFormat" style="display:none">
+    <tr class="Body">
+        <td class="title"></td>
+        <td class="description"></td>
+        <td class="time"></td>
+    </tr>
+</table>
 <textarea id="export" style="height:500px;display:none;">
-<html>
-<head>
-    <meta http-equiv=Content-Type content="text/html; charset=UTF-8">
-    <style>
+    <style type="text/css">
         h1 {
             mso-style-link: "Heading 1 Char";
             margin-top: 12.0pt;
@@ -651,11 +708,6 @@
             border:solid windowtext 1.0pt;
         }
     </style>
-
-</head>
-
-<body lang=EN-US link="#0563C1" vlink="#954F72">
-<div class=WordSection1>
     <table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0 style=''>
         <tr class="Header">
             <td class="title">
@@ -670,13 +722,46 @@
         </tr>
         XXXXXXXXXXXXXXXXXXXXXXXXXXX
     </table>
-</div>
-</body>
-</html>
 </textarea>
 
+<!-- Export as PDF -->
+<div id="element-to-print">
+    <div>
+        html2pdf.js converts any webpage or element into a printable PDF entirely client-side using html2canvas and jsPDF.
+    </div>
+    <table>
+        <tbody>
+        <tr>
+            <td width="300">Company Name</td>
+            <td width="400">Employee Name</td>
+            <td width="100px">Country</td>
+        </tr>
+        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
+        </tbody>
+    </table>
 </div>
+<style type="text/css">
+    #element-to-print table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    #element-to-print tr, #element-to-print tbody {
+        width: 100%;
+    }
 
+    #element-to-print td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+        word-break: break-all;
+    }
+    #element-to-print tr:nth-child(odd) {
+        background-color: #dddddd;
+    }
+</style>
+
+<!-- Basic Structure -->
 <style type="text/css">
     .hidden {
         display: none !important;
