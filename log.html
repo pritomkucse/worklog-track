@@ -471,7 +471,6 @@
         var trBody = "";
         var tr = body.find("#exportAsHtmlFormat").find("tr").clone(true);
 
-
         workHistory.list.forEach(function (row) {
             tr.find("td.title").html(row.title);
             tr.find("td.time").html((row.hour === '' || row.hour === 0 ? '' : row.hour + "H ") + (row.minute === '' ? 0 : row.minute) + "M");
@@ -531,7 +530,46 @@
         link.click();
     }
 
+    var download_as_pdf_maiden_tr = null;
     function download_as_pdf() {
+        if (download_as_pdf_maiden_tr === null) {
+            download_as_pdf_maiden_tr = body.find("#element-to-print").find("table").find("tr.logs").clone(true);
+        }
+        var tr = download_as_pdf_maiden_tr;
+        body.find("#element-to-print").find("table").find("tr.logs").remove();
+
+        workHistory.list.forEach(function (row) {
+            tr.find("td.time_container").html((row.hour === '' || row.hour === 0 ? '' : row.hour + "H ") + (row.minute === '' ? 0 : row.minute) + "M");
+
+            var title = [];
+            row.title.replace(/\r\n/g, '\n').split("\n").forEach(function (t) {
+                if (t.match(REGEX_URL_VALIDATION)) {
+                    title.push("<a href='" + t + "'>" + t + "</a>");
+                }
+                else {
+                    title.push(t);
+                }
+            });
+            tr.find("td.description").html(title.join("<BR>"));
+
+            if ($.trim(row.description).length > 0) {
+                var description = [];
+                row.description.replace(/\s/g, '<BR>').split(" ").forEach(function (t) {
+                    if (t.match(REGEX_URL_VALIDATION)) {
+                        description.push("<a href='" + t + "'>" + t + "</a>");
+                    }
+                    else {
+                        description.push(t);
+                    }
+                });
+                if (description.length > 0) {
+                    tr.find("td.description").append("<BR><BR>").append(description.join("&nbsp;&nbsp;"));
+                }
+            }
+
+            body.find("#element-to-print").find("table tbody").append(tr.clone(true));
+        });
+
         var date = new Date().toISOString().split("T")[0];
         var opt = {
             margin:       0.5,
@@ -725,20 +763,22 @@
 </textarea>
 
 <!-- Export as PDF -->
-<div id="element-to-print">
-    <div>
-        html2pdf.js converts any webpage or element into a printable PDF entirely client-side using html2canvas and jsPDF.
+<div style="position:relative">
+    <div id="element-to-print">
+        <table>
+            <tbody>
+            <tr>
+                <td width="500">Description</td>
+                <td width="80px">Time</td>
+            </tr>
+            <tr class="logs">
+                <td class="description">Some company name which is very big</td>
+                <td class="time_container">Country-name</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
-    <table>
-        <tbody>
-        <tr>
-            <td width="300">Company Name</td>
-            <td width="400">Employee Name</td>
-            <td width="100px">Country</td>
-        </tr>
-        <tr><td>Some company name which is very big</td><td>employee-name-without-any-space-between-those-words</td><td>Country-name</td></tr>
-        </tbody>
-    </table>
+    <div style="position:absolute;width:100%;height:100%;top:0;background-color:white;"></div>
 </div>
 <style type="text/css">
     #element-to-print table {
