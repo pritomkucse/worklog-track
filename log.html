@@ -156,6 +156,20 @@
         handle_paste_hour_data();
     });
 
+    Date.prototype.toISOType = function() {
+        var mm = this.getMonth() + 1; // getMonth() is zero-based
+        var dd = this.getDate();
+
+        return [
+            this.getFullYear(), '-',
+            (mm>9 ? '' : '0') + mm, '-',
+            (dd>9 ? '' : '0') + dd, ' ',
+            (this.getHours()>9?'':'0') + this.getHours(), ':',
+            (this.getMinutes()>9?'':'0') + this.getMinutes(), ':',
+            (this.getSeconds()>9?'':'0') + this.getSeconds()
+        ].join('');
+    };
+
     function initialize_log() {
         if (workHistory.list.length > 0) {
             table.find("tbody tr").first().remove();
@@ -242,7 +256,7 @@
         if (action === "start") {
             if (line.started_at === undefined) {
                 var today = new Date();
-                line.started_at = convert_date_to_string(today);
+                line.started_at = today.toISOType();
                 store_log_history();
                 time_button_action(line_number, "check");
             }
@@ -320,7 +334,7 @@
     }
 
     function calculate_time_interval(started_at) {
-        var today = convert_date_to_string(new Date());
+        var today = new Date().toISOType();
         var from = new Date(started_at);
         var target = new Date(today);
 
@@ -339,9 +353,6 @@
             sec_display: diff_as_sec >= 10 ? diff_as_sec : "0" + diff_as_sec,
             finished_at: today
         };
-    }
-    function convert_date_to_string(date) {
-        return date.toISOString().split("T")[0] + " " + date.toTimeString().substring(0, 8);
     }
     function continue_timer() {
         workHistory.list.forEach(function (line) {
@@ -594,6 +605,30 @@
             }
         }).save();
     }
+
+    function handle_upload_import_json_file() {
+        body.find("[name=upload_file]").change(function (event) {
+            var uploadedFile = event.target.files[0];
+            if (uploadedFile) {
+                console.log(uploadedFile);
+                console.log(uploadedFile.type);
+                if(uploadedFile.type !== "application/json") {
+                    alert("Wrong file type == " + uploadedFile.type);
+                    return false;
+                }
+                var readFile = new FileReader();
+                readFile.onload = function(e) {
+                    var contents = e.target.result;
+                    var json = JSON.parse(contents);
+                    console.log(json);
+                };
+                readFile.readAsText(uploadedFile);
+            }
+        });
+    }
+    setTimeout(function () {
+        handle_upload_import_json_file();
+    }, 500);
 </script>
 
 <div id="main_div">
@@ -656,6 +691,11 @@
                 <button style="width:100%;padding:5px;" class="download_as_json">Export As JSON</button>
                 <div style="height:7px;"></div>
                 <button style="width:100%;padding:5px;" class="download_as_pdf">Export As PDF</button>
+                <div style="height:7px;"></div>
+                <div class="file_upload_section">
+                    <span>Import from JSON</span>
+                    <input type="file" name="upload_file" />
+                </div>
                 <div style="height:7px;"></div>
                 <button style="width:100%;padding:5px;" class="clear_rows">Clear Rows</button>
             </td>
@@ -984,6 +1024,32 @@
     }
     .final_time_box >span {
         font-weight:bold !important;
+    }
+
+    div.file_upload_section {
+        position: relative;
+        background-color: rgba(211, 211, 211, 0.4);
+        padding: 10px;
+        overflow: hidden;
+        border-width: 1px;
+        border-style: outset;
+        border-color: buttonborder;
+        border-image: initial;
+    }
+    div.file_upload_section >span {
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+    }
+    div.file_upload_section input[type=file] {
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        font-size: 2000px;
+        height: 100%;
+        opacity: 0;
+        z-index: 1000;
+        width: 100%;
     }
 
     /* Safari */
