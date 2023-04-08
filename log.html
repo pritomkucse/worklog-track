@@ -79,6 +79,10 @@
             tr.remove();
 
             table.find("tbody tr").first().find(".hour").trigger("change");
+            table.find(".remove_row:not(.remove_row_keep_hide)").hide();
+            setTimeout(function () {
+                table.find(".remove_row:not(.remove_row_keep_hide)").show();
+            }, 3000);
         });
         table.find("tbody").on("click", ".start_time", function () {
             var t = $(this), tr = t.closest("tr"), ln = parseInt(tr.data("line_number"));
@@ -119,8 +123,8 @@
                 var minute2 = parseInt($.trim(thiz.find(".minute").val()));
                 hour2 = isNaN(hour2) || hour2 < 0 ? 0 : hour2;
                 minute2 = isNaN(minute2) || minute2 < 0 ? 0 : minute2;
-                if (hour2.length > 0) hour += hour2;
-                if (minute2.length > 0) minute += minute2;
+                if (hour2 > 0) hour += hour2;
+                if (minute2 > 0) minute += minute2;
 
                 var line = {};
                 if (thiz.data("line_number") === undefined) {
@@ -134,19 +138,26 @@
                         return f.line_number === thiz.data("line_number");
                     })[0];
                 }
+                while (minute2 >= 60) {
+                    hour2++;
+                    minute2 = minute2 - 60;
+                }
 
                 line.line_number = thiz.data("line_number");
                 line.title = thiz.find(".title").val();
                 line.description = thiz.find(".description").val();
                 line.hour = hour2;
                 line.minute = minute2;
+
+                thiz.find(".hour").val(line.hour);
+                thiz.find(".minute").val(line.minute >= 10 ? line.minute : ("0" + line.minute));
             });
             while (minute >= 60) {
                 hour++;
                 minute = minute - 60;
             }
             table.find(".hour_final").html(hour);
-            table.find(".minute_final").html(minute);
+            table.find(".minute_final").html(minute >= 10 ? minute : ("0" + minute));
             store_log_history();
         });
 
@@ -180,7 +191,7 @@
                 lastRow.find(".title").val(line.title);
                 lastRow.find(".description").val(line.description);
                 lastRow.find(".hour").val(line.hour);
-                lastRow.find(".minute").val(line.minute);
+                lastRow.find(".minute").val(line.minute >= 10 ? line.minute : ("0" + line.minute));
                 auto_grow(lastRow.find(".description")[0]);
                 if (line.line_number >= line_number) line_number = line.line_number + 1;
                 lastRow.data("line_number", line.line_number);
@@ -213,6 +224,12 @@
                 });
             }
         }
+        if (workHistory.runningCount > 0) {
+            body.find(".disable_if_running").prop("disabled", true).addClass("mark_as_running");
+        }
+        else {
+            body.find(".disable_if_running").prop("disabled", false).removeClass("mark_as_running");
+        }
     }
 
     function store_log_history() {
@@ -226,10 +243,13 @@
         else {
             table.find(".move_up,.move_down").removeClass("hidden");
         }
+        if (workHistory.runningCount > 0) {
+            body.find(".disable_if_running").prop("disabled", true).addClass("mark_as_running");
+        }
     }
 
     function reset_log_history() {
-        workHistory = {list: []};
+        workHistory = {list: [], runningCount: 0};
     }
 
     function auto_grow(element) {
@@ -257,6 +277,8 @@
             if (line.started_at === undefined) {
                 var today = new Date();
                 line.started_at = today.toISOType();
+                workHistory.runningCount = workHistory.runningCount === undefined ? 1 : workHistory.runningCount + 1;
+                body.find(".disable_if_running").prop("disabled", true).addClass("mark_as_running");
                 store_log_history();
                 time_button_action(line_number, "check");
             }
@@ -303,11 +325,18 @@
                 }
 
                 delete line.started_at;
+
+                workHistory.runningCount = workHistory.runningCount - 1;
+                console.log(workHistory.runningCount);
+                if (workHistory.runningCount === 0) {
+                    body.find(".disable_if_running").prop("disabled", false).removeClass("mark_as_running");
+                }
+
                 store_log_history();
                 time_button_action(line_number, "check");
 
                 tr.find(".hour").val(line.hour);
-                tr.find(".minute").val(line.minute);
+                tr.find(".minute").val(line.minute >= 10 ? line.minute : ("0"+ line.minute));
 
                 localStorage.setItem("last_time_tab_reloaded", new Date().getTime());
                 alert(diff.hour + " hours, " + diff.min + " minutes added");
@@ -320,6 +349,7 @@
                 tr.find(".start_time").show();
                 tr.find(".end_time").hide();
                 tr.find(".title_container").removeClass("timer_running");
+                tr.find(".remove_row").removeClass("remove_row_keep_hide").show();
             }
             else {
                 tr.find(".time_info").show();
@@ -329,6 +359,7 @@
                 tr.find(".start_time").hide();
                 tr.find(".end_time").show();
                 tr.find(".title_container").addClass("timer_running");
+                tr.find(".remove_row").addClass("remove_row_keep_hide").hide();
             }
         }
     }
@@ -620,7 +651,44 @@
                 readFile.onload = function(e) {
                     var contents = e.target.result;
                     var json = JSON.parse(contents);
-                    console.log(json);
+                    if (is_valid_array(json)) {
+                        var newData = [];
+                        var pattern77 = new RegExp("(^([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2})$)");
+                        json.forEach(function (row) {
+                            if (is_valid_object(row)) {
+                                if (is_valid_string(row.title) && is_valid_string(row.description) && is_valid_number(row.hour) && is_valid_number(row.minute)) {
+                                    var row7 = get_empty_row();
+                                    row7.title = row.title;
+                                    row7.description = row.description;
+                                    row7.hour = row.hour;
+                                    row7.minute = row.minute;
+                                    row7.time_slots = [];
+                                    if (is_valid_array(row.time_slots)) {
+                                        row.time_slots.forEach(function (slot) {
+                                            if (is_valid_number(slot.hour) && is_valid_number(slot.minute)) {
+                                                var slot7 = {hour: slot.hour, minute: slot.minute};
+                                                if (pattern77.test(slot.started_at)) {
+                                                    slot7.started_at = slot.started_at;
+                                                }
+                                                if (pattern77.test(slot.finished_at)) {
+                                                    slot7.finished_at = slot.finished_at;
+                                                }
+                                                row7.time_slots.push(slot7);
+                                            }
+                                        });
+                                    }
+                                    newData.push(row7);
+                                }
+                            }
+                        });
+                        reset_log_history();
+                        workHistory.list = newData;
+                        store_log_history();
+                        location.reload();
+                    }
+                    else {
+                        alert("Wrong content");
+                    }
                 };
                 readFile.readAsText(uploadedFile);
             }
@@ -629,6 +697,18 @@
     setTimeout(function () {
         handle_upload_import_json_file();
     }, 500);
+    function is_valid_array(o) {
+        return Object.prototype.toString.call(o) === "[object Array]";
+    }
+    function is_valid_object(o) {
+        return Object.prototype.toString.call(o) === "[object Object]";
+    }
+    function is_valid_string(o) {
+        return Object.prototype.toString.call(o) === "[object String]";
+    }
+    function is_valid_number(o) {
+        return Object.prototype.toString.call(o) === "[object Number]";
+    }
 </script>
 
 <div id="main_div">
@@ -645,7 +725,7 @@
         <tr>
             <td>
                 <div class="title_container">
-                    <b style="display:inline-block;width:100%;">Title:</b>
+                    <b style="display:inline-block;width:100%;font-size:23px;color:crimson;">Title:</b>
                     <input type="text" class="title" placeholder="Title" autocomplete="off"/>
 
                     <BR/><BR/>
@@ -686,15 +766,15 @@
             <td style="text-align:right;padding:7px;">
                 <button style="width:100%;padding:5px;" class="add_row">+ Row</button>
                 <div style="height:7px;"></div>
-                <button style="width:100%;padding:5px;" class="download_as_html">Export As Html</button>
+                <button style="width:100%;padding:5px;" class="download_as_html disable_if_running">Export As Html</button>
                 <div style="height:7px;"></div>
-                <button style="width:100%;padding:5px;" class="download_as_json">Export As JSON</button>
+                <button style="width:100%;padding:5px;" class="download_as_json disable_if_running">Export As JSON</button>
                 <div style="height:7px;"></div>
-                <button style="width:100%;padding:5px;" class="download_as_pdf">Export As PDF</button>
+                <button style="width:100%;padding:5px;" class="download_as_pdf disable_if_running">Export As PDF</button>
                 <div style="height:7px;"></div>
-                <div class="file_upload_section">
+                <div class="file_upload_section disable_if_running">
                     <span>Import from JSON</span>
-                    <input type="file" name="upload_file" />
+                    <input type="file" name="upload_file" class="disable_if_running"/>
                 </div>
                 <div style="height:7px;"></div>
                 <button style="width:100%;padding:5px;" class="clear_rows">Clear Rows</button>
@@ -876,12 +956,12 @@
 
     input[type=text], textarea {
         width: calc(100% - 20px) !important;
-        margin: 0px;
+        margin: 0;
         padding: 12px;
         border-radius: 5px;
         border-width: 1px;
         border-color: lightgray;
-        outline-color: burlywood;
+        outline-color: cadetblue;
     }
 
     input.hour, input.minute {
@@ -907,6 +987,9 @@
         border-width: 2px;
         border-color: coral;
         cursor: pointer;
+    }
+    button.start_time {
+        border-color: green;
     }
 
     .time_info {
@@ -1035,6 +1118,11 @@
         border-style: outset;
         border-color: buttonborder;
         border-image: initial;
+    }
+    div.file_upload_section.mark_as_running {
+        background-color: rgba(239, 239, 239, 1);
+        color: rgba(16, 16, 16, 0.3);
+        border-color: rgba(118, 118, 118, 0.3);
     }
     div.file_upload_section >span {
         display: inline-block;
