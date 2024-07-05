@@ -16,10 +16,10 @@
             lastReloaded = parseFloat(lastReloaded);
             lastReloaded = (new Date().getTime() - lastReloaded) / 1000; // value as seconds
             console.log("Diff="+ lastReloaded + " seconds");
-            if (lastReloaded > (60 * 10)) {
+            if (lastReloaded > (60 * 30)) {
                 localStorage.setItem("last_time_tab_reloaded", new Date().getTime());
                 if (blurred) {
-                    location.reload();
+                    window.location.href = window.location.origin + "?t=" + encodeURIComponent(new Date().getTime());
                 }
             }
         }
@@ -272,6 +272,7 @@
         var line = workHistory.list.filter(function (t) {
             return t.line_number === line_number;
         })[0];
+        console.log(line);
         var tr = $(document.body).find("tr.line_number_" + line_number);
         if (action === "start") {
             if (line.started_at === undefined) {
@@ -362,6 +363,22 @@
                 tr.find(".remove_row").addClass("remove_row_keep_hide").hide();
             }
         }
+
+        var timings = line.timings === undefined ? [] : line.timings, asHtml = [];
+        timings.forEach(function(t) {
+            asHtml.push(`<B>From: ${formatAMPM(new Date(t.started_at))} To: ${formatAMPM(new Date(t.finished_at))}, Time=${t.hour}H ${t.minute}M</B><BR/>`);
+        });
+        if (is_valid_string(line.started_at)) {
+            asHtml.push(`<B>From: ${formatAMPM(new Date(line.started_at))} ................</B><BR/>`);
+        }
+        tr.find("div.timing_history").html(asHtml.join(''));
+    }
+    function formatAMPM(date) {
+        var minutes = date.getMinutes(), day = date.getDate(), month = date.getMonth() + 1;
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        day = day < 10 ? '0' + day : day;
+        month = month < 10 ? '0' + month : month;
+        return `${day}/${month} ${(date.getHours() % 12) || 12}:${minutes} ${date.getHours() < 12 ? 'AM' : 'PM'}`
     }
 
     function calculate_time_interval(started_at) {
@@ -731,6 +748,9 @@
                     <BR/><BR/>
                     Description:
                     <textarea class="description" oninput="auto_grow(this)"></textarea>
+
+                    <BR/>
+                    <div class="timing_history"></div>
                 </div>
                 <div class="hover_actions">
                     <span class="move_up" title="Move Up">move up</span>
@@ -1032,6 +1052,11 @@
         border-left: 10px solid coral;
         padding-left: 10px;
     }
+    div.title_container input.title {
+        font-weight: bold !important;
+        font-size: 23px !important;
+        color: blue;
+    }
 
     span.remove_row {
         opacity: 0;
@@ -1065,6 +1090,7 @@
     div.title_container {
         border-left: 4px solid darkgray;
         padding-left: 10px;
+        padding-bottom: 10px;
     }
 
     .hour_sign, .minute_sign {
